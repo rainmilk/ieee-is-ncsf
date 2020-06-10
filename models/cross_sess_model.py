@@ -1,4 +1,4 @@
-from keras.layers import Input, add, dot, multiply, concatenate, GRU, Lambda, Embedding, Dense, TimeDistributed, Activation
+from keras.layers import Input, add, dot, multiply, concatenate, GRU, Lambda, Embedding, Dense, TimeDistributed, Activation, BatchNormalization
 from keras.models import Model
 from keras import backend as K, regularizers
 from .attentionlayer import Attention, PairAttention
@@ -36,7 +36,8 @@ class CrossSessRS(object):
         # historical session encoding
         history_input = Input(shape=(self.max_nb_sess, self.max_sess_len), dtype='int32', name='his_sess_index')
         sessions = TimeDistributed(sess_encoder)(history_input)
-        his_sess_embed = GRU(self.embedding_len, dropout=self.dropout, recurrent_dropout=self.dropout, name='his_sess_embed')(sessions)
+        his_sess_embed = GRU(self.embedding_len, activation='relu',
+                             dropout=self.dropout, recurrent_dropout=self.dropout, name='his_sess_embed')(sessions)
 
         # current attention
         curr_sess_input = Input(shape=(self.ctx_len,), dtype='int32', name='curr_sess_index')
@@ -45,16 +46,17 @@ class CrossSessRS(object):
         ctx_embed = Attention(name='cross_sess_attention', alpha=self.att_alpha)(curr_sess_embed)
 
         if self.use_his_session:
-            ctx_embed = Activation('tanh')(ctx_embed)
+            his_sess_embed = BatchNormalization()(his_sess_embed)
+            ctx_embed = BatchNormalization()(ctx_embed)
             concat_rep = concatenate([ctx_embed, his_sess_embed])
             hist_gate = Dense(self.embedding_len, activation='sigmoid')(concat_rep)
-            curr_gate = Lambda(lambda x: 1 - x) (hist_gate)  # Dense(self.embedding_len, activation='sigmoid')(concat_rep)
+            curr_gate = Lambda(lambda x: 1 - x) (hist_gate)
             his_gate_embed = multiply([hist_gate, his_sess_embed])
             curr_gate_embed = multiply([curr_gate, ctx_embed])
             ctx_embed = add([his_gate_embed, curr_gate_embed])
 
         target_input = Input(shape=(self.neg_samples + 1,), dtype='int32', name='target_index')
-        pred_embedding = Embedding(self.num_items + 1, ctx_embed.shape[-1].value, name='target_embedding')
+        pred_embedding = Embedding(self.num_items + 1, K.int_shape(ctx_embed)[-1], name='target_embedding')
         target_embed = pred_embedding(target_input)
 
         prob = Activation('softmax')(dot([target_embed, ctx_embed], axes=-1))

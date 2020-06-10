@@ -71,13 +71,13 @@ class Attention(ISRAttentionLayer):
     def build(self, input_shape):
         assert len(input_shape) == 3
 
-        self.W = self.add_weight((input_shape[-1],),
+        self.W = self.add_weight(shape=(input_shape[-1],),
                                  initializer=self.init,
                                  name='{}_W'.format(self.name),
                                  regularizer=self.W_regularizer,
                                  constraint=self.W_constraint)
         if self.bias:
-            self.b = self.add_weight((1,),
+            self.b = self.add_weight(shape=(1,),
                                      initializer='zero',
                                      name='{}_b'.format(self.name),
                                      regularizer=self.b_regularizer,
@@ -110,7 +110,7 @@ class Attention(ISRAttentionLayer):
             a *= K.cast(mask, K.floatx())
 
         # in some cases especially in the early stages of training the sum may be almost zero
-        # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
+        # and this results in NaN's. A workaround is to add a very small positive number epsilon to the sum.
         a /= K.sum(a, axis=1, keepdims=True) + EPSILON
 
         a = K.expand_dims(a)
@@ -151,7 +151,7 @@ class TwoLayerAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -163,7 +163,7 @@ class TwoLayerAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,
@@ -195,7 +195,7 @@ class TwoLayerAttention(ISRAttentionLayer):
         if mask is not None:
             wt *= K.cast(mask, K.floatx())
             # in some cases especially in the early stages of training the sum may be almost zero
-            # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
+            # and this results in NaN's. A workaround is to add a very small positive number to the sum.
             wt /= K.sum(wt, axis=1, keepdims=True) + EPSILON
         else:
             wt /= K.sum(wt, axis=1, keepdims=True)
@@ -236,7 +236,7 @@ class BatchAttention(ISRAttentionLayer):
             mask = mask[0] if mask[1] is None else mask[0] & mask[1]
             wt *= K.cast(mask, K.floatx())
             # in some cases especially in the early stages of training the sum may be almost zero
-            # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
+            # and this results in NaN's. A workaround is to add a very small positive number to the sum.
             wt /= K.sum(wt, axis=1, keepdims=True) + EPSILON
         else:
             wt /= K.sum(wt, axis=1, keepdims=True)
@@ -290,7 +290,7 @@ class BiasedAttention(ISRAttentionLayer):
             mask = mask[0] if mask[1] is None else mask[0] & mask[1]
             wt *= K.cast(mask, K.floatx())
             # in some cases especially in the early stages of training the sum may be almost zero
-            # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
+            # and this results in NaN's. A workaround is to add a very small positive number epsilon to the sum.
             wt /= K.sum(wt, axis=1, keepdims=True) + EPSILON
         else:
             wt /= K.sum(wt, axis=1, keepdims=True)
@@ -330,7 +330,7 @@ class PairAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -342,7 +342,7 @@ class PairAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,
@@ -384,7 +384,7 @@ class PairAttention(ISRAttentionLayer):
             mask = mask[0] if mask[1] is None else mask[0] & mask[1]
             wt *= K.cast(mask, K.floatx())
             # in some cases especially in the early stages of training the sum may be almost zero
-            # and this results in NaN's. A workaround is to add a very small positive number ε to the sum.
+            # and this results in NaN's. A workaround is to add a very small positive number to the sum.
             wt /= K.sum(wt, axis=1, keepdims=True) + EPSILON
         else:
             wt /= K.sum(wt, axis=1, keepdims=True)
@@ -405,7 +405,7 @@ class AverageAttention(ISRAttentionLayer):
 
     def compute_mask(self, inputs, mask=None):
         if mask is not None:
-            mask = K.any(mask, axis=-1, keepdims=True)
+            mask = K.any(mask, axis=-1, keepdims=self.keepdims)
 
         return mask
 
@@ -449,7 +449,7 @@ class GatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -461,7 +461,7 @@ class GatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,
@@ -543,7 +543,7 @@ class AggGatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_mid = self.add_weight((self.mid_units,),
+            self.b_mid = self.add_weight(shape=(self.mid_units,),
                                          initializer='zero',
                                          name='b_mid',
                                          regularizer=self.kernel_regularizer,
@@ -555,7 +555,7 @@ class AggGatedAttention(ISRAttentionLayer):
                                       trainable=True,
                                       constraint=self.kernel_constraint)
         if self.use_bias:
-            self.b_out = self.add_weight((1,),
+            self.b_out = self.add_weight(shape=(1,),
                                          initializer='zero',
                                          name='b_out',
                                          regularizer=self.kernel_regularizer,

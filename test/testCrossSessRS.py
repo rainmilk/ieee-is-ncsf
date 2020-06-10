@@ -31,16 +31,17 @@ for k,v in sessionSet.items():
             else:
                 nb_trn_spl += len(v[i])
 
-window_sz = 5
-neg_samples = 100
-max_session_len = 20
-max_nb_his_sess = 0
+window_sz = 5  # half context window size
+neg_samples = 100  # number of negative samples
+max_session_len = 20 # max number of items in a session
+max_nb_his_sess = 2 # max number of history session
 mini_batch_sz = 200
-test_batch_sz = 50
+test_batch_sz = 20
+embeding_len = 100
 nb_batch = math.ceil(nb_trn_spl / mini_batch_sz)
 
 from models.cross_sess_model import CrossSessRS
-crossRS = CrossSessRS(num_items=nb_item, neg_samples=neg_samples, embedding_len=100, ctx_len=2*window_sz,
+crossRS = CrossSessRS(num_items=nb_item, neg_samples=neg_samples, embedding_len=embeding_len, ctx_len=2*window_sz,
                       max_sess_len=max_session_len, max_nb_sess=max_nb_his_sess, att_alpha=0.01)
 
 trainModel = crossRS.train_model
